@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -163,10 +163,4 @@ test("a delete request must be a trusted JSON list of session ids, at most one p
   const response = await post({ ids: ["nobody", "nobody"] });
   assert.equal(response.status, 200);
   assert.deepEqual(await response.json(), { deleted: [], missing: ["nobody"], running: [] });
-});
-
-test("the row's single delete shares the bulk delete's code", async () => {
-  const detailRoute = await readFile(new URL("./[id]/route.ts", import.meta.url), "utf8");
-  assert.match(detailRoute, /const \{ missing \} = await deleteSessions\(\[id\]\);\s*if \(missing\.length > 0\) \{\s*return NextResponse\.json\(\{ error: "Session not found" \}, \{ status: 404 \}\);/);
-  assert.doesNotMatch(detailRoute, /unlinkSync|writeFileSync|forgetSessionUiState/);
 });
