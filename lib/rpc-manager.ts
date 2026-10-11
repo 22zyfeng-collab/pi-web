@@ -14,7 +14,7 @@ import {
   createProjectCommandBashOperations,
   preferUserBashExtension,
 } from "./project-command-env";
-import { cacheSessionPath, getLatestModelChange, invalidateSessionListCache, readLatestSessionEntryId, resolveSessionPath } from "./session-reader";
+import { cacheSessionPath, catalogFirstMessage, getLatestModelChange, invalidateSessionListCache, readLatestSessionEntryId, resolveSessionPath } from "./session-reader";
 import { getProjectTrustStatus, projectTrustReloadOptions } from "./project-trust";
 import { notifySessionComplete } from "./web-push";
 import { hasActiveSessionLivenessProvider } from "./session-liveness";
@@ -2268,7 +2268,7 @@ export function getRpcSessionInfos(options: { includeTransient?: boolean } = {})
       created,
       modified: new Date(lastActivityMs).toISOString(),
       messageCount: messages.length,
-      firstMessage: firstUserMessage ? runtimeMessageText(firstUserMessage) || "(no messages)" : "(no messages)",
+      firstMessage: catalogFirstMessage(firstUserMessage ? runtimeMessageText(firstUserMessage) || "(no messages)" : "(no messages)"),
       ...(subagent ? {
         parentSessionId: subagent.parentSessionId,
         relation: {
