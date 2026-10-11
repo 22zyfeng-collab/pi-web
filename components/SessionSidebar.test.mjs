@@ -1321,6 +1321,37 @@ test("a project moves next to another of its band, its band's unsaved projects f
   assert.match(source, /const project = projectByKey\.get\(menu\.project\.key\) \?\? menu\.project;\s*menuTitle = project\.name;\s*menuLabel = t\("sidebar\.projectActions", \{ name: project\.name \}\);\s*menuItems = groupMenuItems\(project, menu\.olderCount\);/);
 });
 
+test("a project's group menu ends with Delete all sessions…, which asks first and then deletes in the background", () => {
+  const items = between("const groupMenuItems = ", "let menuTitle");
+  // Last, apart, in red; counted live; nothing to delete leaves it disabled.
+  assert.match(items, /const deletable = familiesToDelete\(treeSelectionInput, project\.key\);/);
+  assert.match(items, /\{ type: "separator", id: "separator-delete" \},\s*\{\s*type: "item",\s*id: "delete-all",\s*label: t\("sidebar\.deleteProjectSessions", \{ count: deletable\.ids\.length \}\),\s*icon: <TrashIcon \/>,\s*danger: true,\s*disabled: deletable\.ids\.length === 0,\s*onSelect: \(\{ keepOpen \}\) => \{\s*keepOpen\(\);\s*askProjectDelete\(project\.key, true\);\s*\},\s*\},\s*\];/);
+  assert.ok(items.indexOf('id: "view-archived"') < items.indexOf('id: "delete-all"'));
+
+  // The menu turns into the question: Cancel takes focus on a desktop and goes
+  // back to the list; on a phone the sheet's own Cancel does (focusCancel).
+  const body = between("const projectDeleteBody = ", "let menuTitle");
+  assert.match(body, /const \{ ids, running \} = familiesToDelete\(treeSelectionInput, project\.key\);/);
+  assert.match(body, /\{running > 0 && <p className="sidebar-menu-question-text">\{t\("sidebar\.deleteProjectSessionsRunning", \{ count: running \}\)\}<\/p>\}/);
+  assert.match(body, /className="sidebar-menu-question-confirm"\s*disabled=\{ids\.length === 0\}\s*onClick=\{\(\) => \{ void deleteAllProjectSessions\(project\); \}\}\s*>\s*\{t\("sidebar\.deleteCount", \{ count: ids\.length \}\)\}/);
+  assert.match(body, /\{!isMobile && \(\s*<button\s*type="button"\s*className="sidebar-menu-question-cancel"\s*data-sidebar-menu-autofocus=""\s*onClick=\{\(\) => askProjectDelete\(project\.key, false\)\}/);
+  assert.match(source, /if \(menu\.askDelete\) menuBody = projectDeleteBody\(project\);/);
+  assert.match(source, /focusCancel=\{menuBody !== null\}/);
+  assert.match(source, />\s*\{menuBody\}\s*<\/SidebarMenu>/);
+
+  // Delete closes the menu, takes the families counted now (one run per
+  // project), tells AppShell of every deleted id (the open session falls back
+  // to a fresh composer), reloads the list and toasts the outcome.
+  const run = callbackBody("deleteAllProjectSessions");
+  assert.match(run, /setMenu\(null\);\s*const \{ ids \} = familiesToDelete\(treeSelectionInput, project\.key\);\s*if \(ids\.length === 0 \|\| deletingProjectsRef\.current\.has\(project\.key\)\) return;\s*deletingProjectsRef\.current\.add\(project\.key\);/);
+  assert.match(run, /const outcome = await deleteProjectSessions\(ids, fetch\);\s*for \(const id of outcome\.deleted\) onSessionDeleted\?\.\(id\);/);
+  assert.match(run, /void loadSessions\(\)\.then\(\(\) => focusAfterCommit\(\(\) => groupHeaderButton\(project\.key\)\)\);/);
+  assert.match(run, /if \(outcome\.error !== null\) \{\s*showToast\(t\("sidebar\.deleteFailed", \{ error: outcome\.error \}\)\);\s*return;\s*\}/);
+  assert.match(run, /finally \{\s*deletingProjectsRef\.current\.delete\(project\.key\);\s*\}/);
+  // Pins, order, names and expansion of the project itself stay as they are.
+  assert.doesNotMatch(run, /applyUiState|saveGroupChoices|setSelectedCwd|moveProject/);
+});
+
 test("a project's Rename… and Reset name change its display name only, from its group menu", () => {
   const items = between("const groupMenuItems = ", "let menuTitle");
   // Rename… always, Reset name while the project has a name of its own, right after Pin.
