@@ -197,6 +197,8 @@ interface Props {
   /** The sidebar's cwd as the bar above a fresh composer shows it; reported when that changes. */
   onNewSessionContextChange?: (context: NewSessionContext | null) => void;
   initialSessionId?: string | null;
+  /** `initialSessionId` is the URL's `?session=`: a toast says so when it is gone. */
+  initialSessionLinked?: boolean;
   skipInitialProjectSelection?: boolean;
   onInitialRestoreDone?: () => void;
   refreshKey?: number;
@@ -468,7 +470,7 @@ function buttonAnchor(element: HTMLElement, align: "start" | "end"): SidebarMenu
   return { kind: "rect", rect: { left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom }, align };
 }
 
-export function SessionSidebar({ selectedSessionId, onSelectSession, onNewSession, controlRef, onNewSessionContextChange, initialSessionId, skipInitialProjectSelection, onInitialRestoreDone, refreshKey, onSessionDeleted, selectedCwd: selectedCwdProp, onCwdChange, onOpenFile, onOpenTerminal, explorerRefreshKey, onExplorerRefresh, onAtMention, onAtMentions, onBackgroundTaskDone, onRunningSessionIdsChange, onSessionsChange }: Props) {
+export function SessionSidebar({ selectedSessionId, onSelectSession, onNewSession, controlRef, onNewSessionContextChange, initialSessionId, initialSessionLinked, skipInitialProjectSelection, onInitialRestoreDone, refreshKey, onSessionDeleted, selectedCwd: selectedCwdProp, onCwdChange, onOpenFile, onOpenTerminal, explorerRefreshKey, onExplorerRefresh, onAtMention, onAtMentions, onBackgroundTaskDone, onRunningSessionIdsChange, onSessionsChange }: Props) {
   const { t } = useI18n();
   const isMobile = useIsMobile();
   const [allSessions, setAllSessions] = useState<SessionInfo[]>([]);
@@ -584,6 +586,10 @@ export function SessionSidebar({ selectedSessionId, onSelectSession, onNewSessio
   selectedSessionIdRef.current = selectedSessionId;
   const [toast, setToast] = useState<SidebarToastData | null>(null);
   const toastIdRef = useRef(0);
+  const showToast = useCallback((message: string, actions: SidebarToastAction[] = [], tail?: string) => {
+    toastIdRef.current += 1;
+    setToast({ id: toastIdRef.current, message, ...(tail ? { tail } : {}), actions });
+  }, []);
   const [uiWriteFailures, setUiWriteFailures] = useState(0);
   const shownUiWriteFailuresRef = useRef(0);
   // Focus to hand to the files once they show (revealFiles): the control
@@ -1103,11 +1109,12 @@ export function SessionSidebar({ selectedSessionId, onSelectSession, onNewSessio
         }
         // Session not found — notify parent so it can show the placeholder
         onInitialRestoreDone?.();
+        if (initialSessionLinked) showToast(t("sidebar.sessionNotFound"));
       }
       const projects = getRecentProjects(allSessions);
       if (projects.length > 0) setSelectedCwd(projects[0].root);
     }
-  }, [allSessions, selectedCwd, initialSessionId, skipInitialProjectSelection, onSelectSession, onInitialRestoreDone]);
+  }, [allSessions, selectedCwd, initialSessionId, initialSessionLinked, skipInitialProjectSelection, onSelectSession, onInitialRestoreDone, showToast, t]);
 
   // Prefer an exact UI selection while a refetch is in flight. Once the
   // response catches up, the server-resolved path handles Windows case and
@@ -1480,11 +1487,6 @@ export function SessionSidebar({ selectedSessionId, onSelectSession, onNewSessio
     saveGroupExpansion(next);
     setKeptOpenGroups((kept) => forgetKeptOpenGroups(kept, keys));
     setMoreShown((shown) => forgetShownMoreOfFolded(shown, next, keys));
-  }, []);
-
-  const showToast = useCallback((message: string, actions: SidebarToastAction[] = [], tail?: string) => {
-    toastIdRef.current += 1;
-    setToast({ id: toastIdRef.current, message, ...(tail ? { tail } : {}), actions });
   }, []);
 
   /**
