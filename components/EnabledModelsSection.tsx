@@ -11,6 +11,7 @@ import {
   isLastEnabledModel,
 } from "./enabled-models-helpers";
 import { ConfigButton, ConfigSwitch } from "./SettingsUi";
+import { ModelContextWindow, type ModelContextSettings } from "./ModelContextWindow";
 
 /**
  * Model switches backed by pi's `enabledModels` setting.
@@ -361,9 +362,11 @@ function useCatalogRefresh(providerId: string, onChanged: () => void) {
 export function EnabledModelsSection({
   providerId,
   controller,
+  contextSettings,
 }: {
   providerId: string;
   controller: EnabledModelsController;
+  contextSettings?: ModelContextSettings;
 }) {
   const { t } = useI18n();
   const [query, setQuery] = useState("");
@@ -453,11 +456,15 @@ export function EnabledModelsSection({
           className="enabled-models-filter"
         />
       )}
+      {contextSettings && <p className="enabled-models-note">{t("models.contextOverrideHelp")}</p>}
       <div className="enabled-models-list">
         {shown.length === 0 ? (
           <div className="enabled-models-empty">{t("models.enabledNoMatches")}</div>
         ) : shown.map((model) => {
           const lastOne = isLastEnabledModel(view, model);
+          const override = contextSettings?.overrides?.[model.id];
+          const contextValue = override && typeof override === "object" && !Array.isArray(override)
+            ? (override as Record<string, unknown>).contextWindow : undefined;
           return (
             <div key={model.ref} className="enabled-models-row">
               <span className="enabled-models-row-text">
@@ -468,6 +475,15 @@ export function EnabledModelsSection({
                 <span className="enabled-models-pin" title={t("models.enabledPinHint")}>
                   {model.thinkingPin}
                 </span>
+              )}
+              {contextSettings && (
+                <ModelContextWindow
+                  modelName={model.name}
+                  effective={model.contextWindow}
+                  value={contextValue}
+                  disabled={contextSettings.disabled}
+                  onChange={(value) => contextSettings.onChange(model.id, value)}
+                />
               )}
               <ConfigSwitch
                 checked={model.enabled}
