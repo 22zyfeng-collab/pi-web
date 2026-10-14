@@ -2085,7 +2085,7 @@ export function ModelsConfig({ onClose, embedded = false, cwd = null }: {
         enabledModels.resync(renames, modelRenames);
       }
     } catch (e) {
-      setSaveError(e instanceof ContextWindowError ? t("models.contextInvalid") : String(e));
+      setSaveError(e instanceof ContextWindowError ? t("models.contextInvalid", { model: e.model }) : String(e));
     } finally {
       setSaving(false);
     }

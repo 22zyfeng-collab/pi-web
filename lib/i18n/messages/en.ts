@@ -1293,7 +1293,7 @@ export const enLocale: LocalePlugin = {
     "models.contextDefault": "Default",
     "models.contextForModel": "Context window for {model}",
     "models.contextEffective": "Currently: {tokens}",
-    "models.contextInvalid": "Enter a positive whole number of tokens.",
+    "models.contextInvalid": "Context window of {model}: enter a positive whole number of tokens.",
     "models.contextOverrideHelp": "Blank uses the catalog default. Save below; newly started sessions use the change. Restart Pi Web to update loaded sessions. This does not increase the provider's actual limit.",
     "models.maxOutputTokens": "Max output tokens",
     "models.costPerMillion": "Cost per million tokens",

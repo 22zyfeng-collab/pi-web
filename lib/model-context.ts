@@ -30,28 +30,41 @@ export function withContextWindowOverride<T extends ModelContextConfig>(
   return { ...config, providers };
 }
 
+/** `model` is the override's `provider/modelId`, so a refused save can name the field. */
 export class ContextWindowError extends Error {
-  constructor() {
-    super("Context window must be a positive safe integer (tokens)");
+  readonly model: string;
+
+  constructor(model: string) {
+    super(`Context window of ${model} must be a positive number of tokens`);
     this.name = "ContextWindowError";
+    this.model = model;
   }
 }
 
-export function parseContextWindow(value: unknown): number {
-  const parsed = typeof value === "string" && /^\d+$/.test(value.trim()) ? Number(value.trim()) : value;
-  if (typeof parsed !== "number" || !Number.isSafeInteger(parsed) || parsed <= 0) throw new ContextWindowError();
-  return parsed;
+/**
+ * The field's draft is text and must be a whole token count. A value already
+ * in models.json only has to pass pi's own check, any positive number
+ * (400000.5 loads), so one hand-edited override never blocks an unrelated save.
+ * Undefined when the value is neither.
+ */
+export function parseContextWindow(value: unknown): number | undefined {
+  if (typeof value === "string") {
+    const parsed = /^\d+$/.test(value.trim()) ? Number(value.trim()) : 0;
+    return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : undefined;
+  }
+  return typeof value === "number" && Number.isFinite(value) && value > 0 ? value : undefined;
 }
 
 export function normalizeContextWindowOverrides<T extends ModelContextConfig>(config: T): T {
   const result = structuredClone(config);
   if (!isRecord(result.providers)) return result;
-  for (const provider of Object.values(result.providers)) {
+  for (const [providerId, provider] of Object.entries(result.providers)) {
     if (!isRecord(provider) || !isRecord(provider.modelOverrides)) continue;
-    for (const override of Object.values(provider.modelOverrides)) {
-      if (isRecord(override) && Object.hasOwn(override, "contextWindow")) {
-        override.contextWindow = parseContextWindow(override.contextWindow);
-      }
+    for (const [modelId, override] of Object.entries(provider.modelOverrides)) {
+      if (!isRecord(override) || !Object.hasOwn(override, "contextWindow")) continue;
+      const parsed = parseContextWindow(override.contextWindow);
+      if (parsed === undefined) throw new ContextWindowError(`${providerId}/${modelId}`);
+      override.contextWindow = parsed;
     }
   }
   return result;

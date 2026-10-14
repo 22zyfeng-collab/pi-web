@@ -83,3 +83,21 @@ test("saved login-model context overrides reach the SDK; resetting restores the 
   assert.equal(reset.getModel("openai-codex", "gpt-6-astra").maxTokens, 128000);
   assert.equal(await readFile(authPath, "utf8"), credentials);
 });
+
+test("a hand-edited override pi accepts does not block saving an unrelated provider", async () => {
+  const { ModelRuntime } = await import("@earendil-works/pi-coding-agent");
+  const config = { providers: {
+    "openai-codex": { modelOverrides: { "gpt-6-astra": { contextWindow: 400000.5 } } },
+    relay: { baseUrl: "http://127.0.0.1:1/v1", api: "openai-completions", apiKey: "TEST_ONLY_KEY", models: [{ id: "a" }] },
+  } };
+  await writeFile(modelsPath, JSON.stringify(config));
+  const options = { authPath: join(testAgentDir, "auth.json"), modelsPath, modelsStorePath: join(testAgentDir, "models-store.json"), refreshOnCreate: false };
+  const runtime = await ModelRuntime.create(options);
+  assert.equal(runtime.getError(), undefined);
+  assert.equal(runtime.getModel("openai-codex", "gpt-6-astra").contextWindow, 400000.5);
+  const edited = structuredClone(config);
+  edited.providers.relay.models.push({ id: "b" });
+  const response = await PUT(put(edited));
+  assert.equal(response.status, 200);
+  assert.deepEqual(await (await GET()).json(), edited);
+});

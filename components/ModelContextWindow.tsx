@@ -21,10 +21,7 @@ export function ModelContextWindow({ modelName, effective, value, onChange, disa
 }) {
   const { t, locale } = useI18n();
   const id = useId();
-  let invalid = false;
-  if (value !== undefined) {
-    try { parseContextWindow(value); } catch { invalid = true; }
-  }
+  const invalid = value !== undefined && parseContextWindow(value) === undefined;
   return (
     <div className="model-context-field">
       <label htmlFor={id}>{t("models.contextWindow")}</label>
@@ -46,7 +43,7 @@ export function ModelContextWindow({ modelName, effective, value, onChange, disa
         </ConfigButton>
       </div>
       <span id={`${id}-note`} role={invalid ? "alert" : undefined} className={invalid ? "enabled-models-error" : "model-context-effective"}>
-        {invalid ? t("models.contextInvalid") : effective === undefined ? "" : t("models.contextEffective", { tokens: effective.toLocaleString(locale) })}
+        {invalid ? t("models.contextInvalid", { model: modelName }) : effective === undefined ? "" : t("models.contextEffective", { tokens: effective.toLocaleString(locale) })}
       </span>
     </div>
   );

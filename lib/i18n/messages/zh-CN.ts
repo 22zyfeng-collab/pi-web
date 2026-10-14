@@ -1293,7 +1293,7 @@ export const zhCNLocale: LocalePlugin = {
     "models.contextDefault": "默认",
     "models.contextForModel": "{model} 的上下文窗口",
     "models.contextEffective": "当前配置：{tokens}",
-    "models.contextInvalid": "请输入正整数 tokens 数量。",
+    "models.contextInvalid": "{model} 的上下文窗口：请输入正整数 tokens 数量。",
     "models.contextOverrideHelp": "留空使用模型目录默认值。点击底部「保存」后，新启动的会话使用新值；已加载的会话需重启 Pi Web。这不会提高服务商的实际上限。",
     "models.maxOutputTokens": "最大输出 tokens",
     "models.costPerMillion": "每百万 tokens 价格",
