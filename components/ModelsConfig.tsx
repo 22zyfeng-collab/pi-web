@@ -1856,6 +1856,8 @@ export function ModelsConfig({ onClose, embedded = false, cwd = null }: {
   const [selection, setSelection] = useState<Selection | null>(readRememberedSelection);
   const [oauthProviders, setOauthProviders] = useState<OAuthProvider[]>([]);
   const [apiKeyProviders, setApiKeyProviders] = useState<ApiKeyProvider[]>([]);
+  /** Set once the provider lists have answered; until then an overrides-only entry may be a managed provider's. */
+  const [authListed, setAuthListed] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
   /** Provider ids as models.json has them on disk, and where renames moved them. */
   const savedProvidersRef = useRef<Set<string>>(new Set());
@@ -1879,7 +1881,8 @@ export function ModelsConfig({ onClose, embedded = false, cwd = null }: {
         if (Array.isArray(d.oauthProviders)) setOauthProviders(d.oauthProviders);
         if (Array.isArray(d.apiKeyProviders)) setApiKeyProviders(d.apiKeyProviders);
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setAuthListed(true));
   }, []);
 
   useEffect(() => {
@@ -2092,8 +2095,9 @@ export function ModelsConfig({ onClose, embedded = false, cwd = null }: {
   }, [applyProviderRename, config, enabledModels, loadError, providerNameDraft, t]);
 
   const providers = Object.entries(config.providers ?? {}).filter(([id, entry]) => {
+    if (Object.keys(entry).length !== 1 || !entry.modelOverrides) return true;
     const managed = oauthProviders.some((provider) => provider.id === id) || apiKeyProviders.some((provider) => provider.id === id);
-    return !managed || Object.keys(entry).length !== 1 || !entry.modelOverrides;
+    return authListed && !managed;
   });
   // `12/40` next to a provider makes a narrowed selector visible at a glance.
   const scopeBadge = (providerId: string) => {
