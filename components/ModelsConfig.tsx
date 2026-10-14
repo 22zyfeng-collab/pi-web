@@ -2122,7 +2122,8 @@ export function ModelsConfig({ onClose, embedded = false, cwd = null }: {
     }
     if (selection.type === "provider") {
       const provider = config.providers?.[selection.name];
-      if (!provider) return null;
+      // Only an entry the list shows as custom: an overrides-only one waits for the provider lists.
+      if (!provider || !providers.some(([id]) => id === selection.name)) return null;
       return (
         <ProviderDetail
           key={selection.name}
