@@ -47,6 +47,11 @@ export async function checkModelContext(page) {
   };
   try {
     await open();
+    assert.equal(await input.getAttribute("placeholder"), "272000", "A blank field shows the window pi resolves");
+    const name = input.locator("xpath=..").locator(".enabled-models-row-text");
+    const [field, text] = await Promise.all([input.boundingBox(), name.boundingBox()]);
+    assert.ok(Math.abs(field.y + field.height / 2 - (text.y + text.height / 2)) < 4 && field.height <= text.height,
+      "The input sits on the model's line without making the row taller");
     await input.fill("500000");
     assert.equal(writes, 0, "Editing must wait for the shared Save button");
     await save();
@@ -61,7 +66,7 @@ export async function checkModelContext(page) {
     await input.fill("500k");
     assert.equal(await input.getAttribute("aria-invalid"), "true");
     await settings.getByRole("button", { name: "Save", exact: true }).click();
-    await settings.getByRole("alert").first().waitFor();
+    await settings.getByText("Context window of openai-codex/gpt-6-astra: enter a positive whole number of tokens.", { exact: true }).waitFor();
     assert.equal(writes, 1, "Invalid input must not reach the writer");
     assert.equal(await input.inputValue(), "500k", "Invalid drafts must not be truncated to 500");
 
@@ -78,12 +83,13 @@ export async function checkModelContext(page) {
     const bounds = await input.boundingBox();
     assert.ok(bounds && bounds.x >= 0 && bounds.x + bounds.width <= page.viewportSize().width,
       "The input remains within the viewport at desktop and phone widths");
-    await settings.getByRole("button", { name: "Default", exact: true }).click();
-    assert.equal(await input.inputValue(), "");
+    await input.fill("");
     await save();
     assert.deepEqual(saved, { providers: { relay: { models: [{ id: "keep-me" }] } } });
+    // The placeholder is what pi resolves, so it shows the default again once the cleared field is saved.
+    await settings.locator('input[aria-label="Context window for GPT-6 Astra"][placeholder="272000"]').waitFor();
     await settings.getByRole("button", { name: "Close", exact: true }).click();
-    console.log("PASS: account context edit/save/reopen/validation/retry/default preserve other model settings");
+    console.log("PASS: account context edit/save/reopen/validation/retry/clear preserve other model settings");
   } finally {
     for (const route of routes) await page.unroute(route);
   }

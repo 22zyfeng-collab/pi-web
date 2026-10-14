@@ -395,6 +395,7 @@ export function EnabledModelsSection({
   const editable = view?.editable === true;
   const scopeNoteId = `${noteId}-scope`;
   const lastModelNoteId = `${noteId}-last`;
+  const contextNoteId = `${noteId}-context`;
   const disableBlockedByLastModel = editable && !bulk.canDisable && bulk.disableRefs.length > 0;
   const showLastModelNote = disableBlockedByLastModel || (editable && shown.some((model) => isLastEnabledModel(view, model)));
   // A provider-wide action is resolved server-side so models the browser has
@@ -456,7 +457,7 @@ export function EnabledModelsSection({
           className="enabled-models-filter"
         />
       )}
-      {contextSettings && <p className="enabled-models-note">{t("models.contextOverrideHelp")}</p>}
+      {contextSettings && <div id={contextNoteId} className="enabled-models-note">{t("models.contextOverrideHelp")}</div>}
       <div className="enabled-models-list">
         {shown.length === 0 ? (
           <div className="enabled-models-empty">{t("models.enabledNoMatches")}</div>
@@ -482,6 +483,7 @@ export function EnabledModelsSection({
                   effective={model.contextWindow}
                   value={contextValue}
                   disabled={contextSettings.disabled}
+                  describedBy={contextNoteId}
                   onChange={(value) => contextSettings.onChange(model.id, value)}
                 />
               )}
