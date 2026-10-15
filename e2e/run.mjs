@@ -243,8 +243,7 @@ try {
 
   browser = await chromium.launch();
   for (const viewport of [{ width: 1280, height: 800 }, { width: 390, height: 844 }]) {
-    // Route fixtures must intercept requests in production builds too.
-    context = await browser.newContext({ viewport, locale: "en-US", serviceWorkers: "block" });
+    context = await browser.newContext({ viewport, locale: "en-US" });
     await context.tracing.start({ screenshots: true, snapshots: true });
     page = await context.newPage();
     page.setDefaultTimeout(30_000);
